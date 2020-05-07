@@ -6,18 +6,17 @@ from pygame.locals import *
 from classes import *
 from random import randint
 
-HEIGHT = 1920
-WIDTH = 1080
+HEIGHT = 1080
+WIDTH = 720
 
 def findNoteIdx(note, notes):
 	i = 0
 	for n in notes:
 		if n.note == note:
-			if not n.time_off == -1:
+			if n.time_off == -1:
 				return i
-			else:
-				i += 1
-	return -1
+
+		i += 1
 
 def clean(notes, now):
 	for n in notes:
@@ -29,12 +28,12 @@ def clean(notes, now):
 
 def createParticles(note):
 	particles = []
-	newParticlesCount = randint(10,20)
+	newParticlesCount = randint(5,15)
 
 	for i in range(newParticlesCount):
 		deg = randint(0,359)
 
-		pos = [int(note.time_on)*100 % WIDTH, HEIGHT - (int((note.note - 21) * (HEIGHT/87) + randint(int(-HEIGHT/87), int(HEIGHT/87))))]
+		pos = [int(note.time_on) % WIDTH, HEIGHT - (int((note.note - 21) * (HEIGHT/87) + randint(int(-HEIGHT/87), int(HEIGHT/87))))]
 
 		acceleration = note.velocity/4
 		accelerationDecay = acceleration/50
@@ -118,7 +117,7 @@ def main():
 			for n in notes:
 				if n.time_off == -1:
 					particles += createParticles(n)
-					
+
 		notes = clean(notes, time.perf_counter())
 		# print(len(notes))
 
