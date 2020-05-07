@@ -11,3 +11,17 @@ class GNote:
 	def __str__(self):
 		return "Note %d played from %f to %f at %d velocity." % (self.note, self.time_on, self.time_off, self.velocity)
 
+class Particle:
+	def __init__(self, acceleration=10, accelerationDecay=0.001, color=(255,255,255), deg=0, pos=(0,0)):
+		self.acceleration = acceleration
+		self.accelerationDecay = accelerationDecay
+		self.color = color
+		self.deg = deg
+		self.pos = pos
+		self.active = True
+
+	def setOff(self):
+		self.active = False
+
+	def __str__(self):
+		return "Particle at (%d;%d)" % (self.pos[0], self.pos[1])
