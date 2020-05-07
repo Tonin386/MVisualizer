@@ -4,10 +4,11 @@ import time
 
 from pygame.locals import *
 from classes import *
-from random import randint
+from random import randint, uniform
+from math import cos, sin, pi
 
+WIDTH = 1920
 HEIGHT = 1080
-WIDTH = 720
 
 def findNoteIdx(note, notes):
 	i = 0
@@ -15,60 +16,56 @@ def findNoteIdx(note, notes):
 		if n.note == note:
 			if n.time_off == -1:
 				return i
-
 		i += 1
 
 def clean(notes, now):
 	for n in notes:
 		if n.time_off != -1:
-			if now - n.time_off > 5:
+			if now - n.time_off > 2:
 				notes.remove(n)
 
 	return notes
 
-def createParticles(note):
+def createParticles(note, r=-1, g=-1, b=-1):
 	particles = []
-	newParticlesCount = randint(5,15)
+	newParticlesCount = randint(5,10)
+
+	if r == -1:
+		r = randint(0,255)
+	if g == -1:
+		g = randint(0,255)
+	if b == -1:
+		b = randint(0,255)
 
 	for i in range(newParticlesCount):
-		deg = randint(0,359)
+		rad = uniform(0,2*pi)
 
-		pos = [int(note.time_on) % WIDTH, HEIGHT - (int((note.note - 21) * (HEIGHT/87) + randint(int(-HEIGHT/87), int(HEIGHT/87))))]
+		pos = [int(time.perf_counter()*150) % WIDTH, HEIGHT - int(((note.note - 21) * (HEIGHT/87)))]
 
-		acceleration = note.velocity/4
-		accelerationDecay = acceleration/50
+		acceleration = uniform(note.velocity/64, note.velocity/6)
+		if acceleration < 1:
+			acceleration = 1
+		accelerationDecay = acceleration/100
 
-		color = pygame.Color(255, randint(0,255), 255)
+		color = pygame.Color(r, g, b)
 
-		particles.append(Particle(acceleration, accelerationDecay, color, deg, pos))
+		particles.append(Particle(acceleration, accelerationDecay, color, rad, pos))
 
 	return particles
 
 def moveParticles(particles):
 
 	for p in particles:
-		if p.acceleration <= 0:
+		if int(p.acceleration) <= 0:
 			p.active = False
 			particles.remove(p)
+			continue
 
-		coeffAccelerationY = (p.deg % 90) / 90
-		coeffAccelerationX = 1 - coeffAccelerationY
+		coeffAccelerationX = cos(p.rad)
+		coeffAccelerationY = sin(p.rad)
 
-		x = p.pos[0]
-		y = p.pos[1]
-
-		if p.deg < 90:
-			x += p.acceleration * coeffAccelerationX
-			y += p.acceleration * coeffAccelerationY
-		if 90 <= p.deg < 180:
-			x -= p.acceleration * coeffAccelerationX
-			y += p.acceleration * coeffAccelerationY
-		if 180 <= p.deg < 270:
-			x -= p.acceleration * coeffAccelerationX
-			y -= p.acceleration * coeffAccelerationY
-		if 270 <= p.deg < 360:
-			x += p.acceleration * coeffAccelerationX
-			y -= p.acceleration * coeffAccelerationY
+		x = p.pos[0] + p.acceleration * coeffAccelerationX
+		y = p.pos[1] + p.acceleration * coeffAccelerationY
 
 		p.pos = [int(x), int(y)]
 
@@ -78,7 +75,7 @@ def moveParticles(particles):
 
 def main():
 	pygame.init()
-	window = pygame.display.set_mode((HEIGHT,WIDTH), RESIZABLE)
+	window = pygame.display.set_mode((WIDTH,HEIGHT), RESIZABLE)
 
 	stop = False
 	inport = None
@@ -109,14 +106,17 @@ def main():
 		for msg in inport.iter_pending():
 			if msg.type == "note_on":
 				notes.append(GNote(msg, time.perf_counter()))
-			else:
+			elif msg.type == "note_off":
 				idx = findNoteIdx(msg.note, notes)
 				notes[idx].setOff(time.perf_counter())
 
-		if tick > 0.01:
+		if tick > 1/60:
 			for n in notes:
 				if n.time_off == -1:
-					particles += createParticles(n)
+					r = 0
+					g = -1
+					b = 150
+					particles += createParticles(n, r, g, b)
 
 		notes = clean(notes, time.perf_counter())
 		# print(len(notes))
@@ -125,7 +125,7 @@ def main():
 
 		for p in particles:
 			if p.active:
-				pygame.draw.circle(window, p.color, p.pos, 1)
+				pygame.draw.circle(window, p.color, p.pos, 3)
 		pygame.display.flip()
 
 		particles = moveParticles(particles)
